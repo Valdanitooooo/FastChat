@@ -850,6 +850,18 @@ class WizardLMAdapter(BaseModelAdapter):
             # (https://huggingface.co/WizardLM/WizardLM-13B-V1.0)
             return get_conv_template("one_shot")
 
+class WizardCoderAdapter(BaseModelAdapter):
+    """The model adapter for WizardLM/WizardCoder-15B-V1.0"""
+
+    use_fast_tokenizer = False
+
+    def match(self, model_path: str):
+        return "wizardcoder" in model_path.lower()
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        # (https://github.com/nlpxucan/WizardLM/blob/main/WizardCoder/src/inference_wizardcoder.py#L59)
+        return get_conv_template("mpt-30b-instruct")
+
 
 class ManticoreAdapter(BaseModelAdapter):
     """The model adapter for openaccess-ai-collective/manticore-13b-chat-pyg"""
@@ -1086,6 +1098,7 @@ register_model_adapter(H2OGPTAdapter)
 register_model_adapter(RobinAdapter)
 register_model_adapter(SnoozyAdapter)
 register_model_adapter(WizardLMAdapter)
+register_model_adapter(WizardCoderAdapter)
 register_model_adapter(ManticoreAdapter)
 register_model_adapter(GuanacoAdapter)
 register_model_adapter(CamelAdapter)

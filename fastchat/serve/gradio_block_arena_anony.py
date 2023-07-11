@@ -169,6 +169,7 @@ SAMPLING_WEIGHTS = {
     "vicuna-33b": 1.5,
     "vicuna-13b": 1.5,
     "wizardlm-13b": 1.5,
+    "wizardcoder-15b-v1.0": 1.5,
     "gpt4all-13b-snoozy": 1.5,
     "guanaco-33b": 1.5,
     "koala-13b": 1.2,

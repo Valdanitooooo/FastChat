@@ -36,6 +36,7 @@ selected_models = [
     "vicuna-7b-v1.3",
     "wizardlm-13b",
     "wizardlm-30b",
+    "wizardcoder-15b-v1.0",
 ]
 
 

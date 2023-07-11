@@ -69,6 +69,12 @@ register_model_info(
     "an instruction-following LLM using evol-instruct by Microsoft",
 )
 register_model_info(
+    ["wizardcoder-15b-v1.0"],
+    "WizardCoder",
+    "https://github.com/nlpxucan/WizardLM/tree/main/WizardCoder",
+    "an Empowering Code LLM using evol-instruct by Microsoft",
+)
+register_model_info(
     ["guanaco-33b", "guanaco-65b"],
     "Guanaco",
     "https://github.com/artidoro/qlora",
