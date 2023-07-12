@@ -36,7 +36,8 @@ def generate_stream_wizardcoder(
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     input_ids = inputs["input_ids"]
     attention_mask = inputs["attention_mask"]
-
+    if context_len is None:
+        context_len = 8192
     max_src_len = context_len - max_new_tokens - 8
 
     input_ids = input_ids[-max_src_len:]  # truncate from the left

@@ -255,7 +255,7 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
     is_chatglm = "chatglm" in model_type
     is_falcon = "rwforcausallm" in model_type
     is_codet5p = "codet5p" in model_type
-    is_wizardcoder = "wizardcoder" in model_type
+    is_wizardcoder = "gptbigcodeforcausallm" in model_type
 
     if is_chatglm:
         return generate_stream_chatglm

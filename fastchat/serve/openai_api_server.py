@@ -148,6 +148,8 @@ async def check_length(request, prompt, max_tokens):
         )
         token_num = response.json()["count"]
 
+    if context_len is None:
+        context_len = 8192
     if token_num + max_tokens > context_len:
         return create_error_response(
             ErrorCode.CONTEXT_OVERFLOW,
@@ -692,6 +694,8 @@ async def count_tokens(request: APITokenCheckRequest):
             token_num = response.json()["count"]
 
             can_fit = True
+            if context_len is None:
+                context_len = 8192
             if token_num + item.max_tokens > context_len:
                 can_fit = False
 
