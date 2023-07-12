@@ -563,8 +563,8 @@ By using this service, users are required to agree to the following terms: The s
         )
         max_output_tokens = gr.Slider(
             minimum=16,
-            maximum=1024,
-            value=512,
+            maximum=4096,
+            value=2048,
             step=64,
             interactive=True,
             label="Max output tokens",
