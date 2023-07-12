@@ -31,6 +31,7 @@ from fastchat.model.compression import load_compress_model
 from fastchat.model.model_chatglm import generate_stream_chatglm
 from fastchat.model.model_codet5p import generate_stream_codet5p
 from fastchat.model.model_falcon import generate_stream_falcon
+from fastchat.model.model_wizardcoder import generate_stream_wizardcoder
 from fastchat.model.monkey_patch_non_inplace import (
     replace_llama_attn_with_non_inplace_operations,
 )
@@ -254,6 +255,7 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
     is_chatglm = "chatglm" in model_type
     is_falcon = "rwforcausallm" in model_type
     is_codet5p = "codet5p" in model_type
+    is_wizardcoder = "wizardcoder" in model_type
 
     if is_chatglm:
         return generate_stream_chatglm
@@ -261,6 +263,8 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
         return generate_stream_falcon
     elif is_codet5p:
         return generate_stream_codet5p
+    elif is_wizardcoder:
+        return generate_stream_wizardcoder
     elif peft_share_base_weights and "peft" in model_path:
         # Return a curried stream function that loads the right adapter
         # according to the model_name available in this context.  This ensures
