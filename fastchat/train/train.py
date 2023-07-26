@@ -14,9 +14,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import copy
 from dataclasses import dataclass, field
 import json
+import math
 import pathlib
 from typing import Dict, Optional, Sequence
 
@@ -36,13 +36,15 @@ IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 @dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(default="facebook/opt-125m")
-    flash_attn: bool = False
 
 
 @dataclass
 class DataArguments:
     data_path: str = field(
         default=None, metadata={"help": "Path to the training data."}
+    )
+    eval_data_path: str = field(
+        default=None, metadata={"help": "Path to the evaluation data."}
     )
     lazy_preprocess: bool = False
 
@@ -218,20 +220,16 @@ def make_supervised_data_module(
         LazySupervisedDataset if data_args.lazy_preprocess else SupervisedDataset
     )
     rank0_print("Loading data...")
-    raw_data = json.load(open(data_args.data_path, "r"))
 
-    # Split train/test
-    np.random.seed(0)
-    perm = np.random.permutation(len(raw_data))
-    split = int(len(perm) * 0.98)
-    train_indices = perm[:split]
-    eval_indices = perm[split:]
-    train_raw_data = [raw_data[i] for i in train_indices]
-    eval_raw_data = [raw_data[i] for i in eval_indices]
-    rank0_print(f"#train {len(train_raw_data)}, #eval {len(eval_raw_data)}")
+    train_json = json.load(open(data_args.data_path, "r"))
+    train_dataset = dataset_cls(train_json, tokenizer=tokenizer)
 
-    train_dataset = dataset_cls(train_raw_data, tokenizer=tokenizer)
-    eval_dataset = dataset_cls(eval_raw_data, tokenizer=tokenizer)
+    if data_args.eval_data_path:
+        eval_json = json.load(open(data_args.eval_data_path, "r"))
+        eval_dataset = dataset_cls(eval_json, tokenizer=tokenizer)
+    else:
+        eval_dataset = None
+
     return dict(train_dataset=train_dataset, eval_dataset=eval_dataset)
 
 
@@ -248,6 +246,13 @@ def train():
         cache_dir=training_args.cache_dir,
     )
     model.config.use_cache = False
+
+    # Set RoPE scaling factor
+    orig_ctx_len = getattr(model.config, "max_position_embeddings", None)
+    if orig_ctx_len and training_args.model_max_length > orig_ctx_len:
+        scaling_factor = math.ceil(training_args.model_max_length / orig_ctx_len)
+        model.config.rope_scaling = {"type": "linear", "factor": scaling_factor}
+
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
@@ -256,16 +261,16 @@ def train():
         use_fast=False,
     )
     tokenizer.pad_token = tokenizer.unk_token
-
     data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+
     trainer = Trainer(
         model=model, tokenizer=tokenizer, args=training_args, **data_module
     )
-
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()
+    model.config.use_cache = True
     trainer.save_state()
     safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir)
 
