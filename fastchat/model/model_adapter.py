@@ -30,6 +30,8 @@ from fastchat.conversation import Conversation, get_conv_template
 from fastchat.model.compression import load_compress_model
 from fastchat.model.model_chatglm import generate_stream_chatglm
 from fastchat.model.model_codet5p import generate_stream_codet5p
+from fastchat.model.model_codegen import generate_stream_codegen
+from fastchat.model.model_codegeex import generate_stream_codegeex
 from fastchat.model.model_falcon import generate_stream_falcon
 from fastchat.model.model_wizardcoder import generate_stream_wizardcoder
 from fastchat.model.monkey_patch_non_inplace import (
@@ -40,7 +42,7 @@ from fastchat.utils import get_gpu_memory
 # Check an environment variable to check if we should be sharing Peft model
 # weights.  When false we treat all Peft models as separate.
 peft_share_base_weights = (
-    os.environ.get("PEFT_SHARE_BASE_WEIGHTS", "false").lower() == "true"
+        os.environ.get("PEFT_SHARE_BASE_WEIGHTS", "false").lower() == "true"
 )
 
 
@@ -118,7 +120,7 @@ def get_model_adapter(model_path: str) -> BaseModelAdapter:
 
 
 def raise_warning_for_incompatible_cpu_offloading_configuration(
-    device: str, load_8bit: bool, cpu_offloading: bool
+        device: str, load_8bit: bool, cpu_offloading: bool
 ):
     if cpu_offloading:
         if not load_8bit:
@@ -144,15 +146,15 @@ def raise_warning_for_incompatible_cpu_offloading_configuration(
 
 
 def load_model(
-    model_path: str,
-    device: str,
-    num_gpus: int,
-    max_gpu_memory: Optional[str] = None,
-    load_8bit: bool = False,
-    cpu_offloading: bool = False,
-    gptq_config: Optional[GptqConfig] = None,
-    revision: str = "main",
-    debug: bool = False,
+        model_path: str,
+        device: str,
+        num_gpus: int,
+        max_gpu_memory: Optional[str] = None,
+        load_8bit: bool = False,
+        cpu_offloading: bool = False,
+        gptq_config: Optional[GptqConfig] = None,
+        revision: str = "main",
+        debug: bool = False,
 ):
     """Load a model from Hugging Face."""
 
@@ -202,7 +204,7 @@ def load_model(
 
         if "max_memory" in kwargs:
             kwargs["max_memory"]["cpu"] = (
-                str(math.floor(psutil.virtual_memory().available / 2**20)) + "Mib"
+                    str(math.floor(psutil.virtual_memory().available / 2 ** 20)) + "Mib"
             )
         kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_8bit_fp32_cpu_offload=cpu_offloading
@@ -240,8 +242,8 @@ def load_model(
     model, tokenizer = adapter.load_model(model_path, kwargs)
 
     if (device == "cuda" and num_gpus == 1 and not cpu_offloading) or device in (
-        "mps",
-        "xpu",
+            "mps",
+            "xpu",
     ):
         model.to(device)
 
@@ -269,6 +271,8 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
     is_falcon = "rwforcausallm" in model_type
     is_codet5p = "codet5p" in model_type
     is_wizardcoder = "gptbigcodeforcausallm" in model_type
+    is_codegen = "codegen" in model_type
+    is_codegeex = "codegeex" in model_type
     is_peft = "peft" in model_type
 
     if is_chatglm:
@@ -279,29 +283,33 @@ def get_generate_stream_function(model: torch.nn.Module, model_path: str):
         return generate_stream_codet5p
     elif is_wizardcoder:
         return generate_stream_wizardcoder
+    elif is_codegen:
+        return generate_stream_codegen
+    elif is_codegeex:
+        return generate_stream_codegeex
     elif peft_share_base_weights and is_peft:
         # Return a curried stream function that loads the right adapter
         # according to the model_name available in this context.  This ensures
         # the right weights are available.
         @torch.inference_mode()
         def generate_stream_peft(
-            model,
-            tokenizer,
-            params: Dict,
-            device: str,
-            context_len: int,
-            stream_interval: int = 2,
-            judge_sent_end: bool = False,
+                model,
+                tokenizer,
+                params: Dict,
+                device: str,
+                context_len: int,
+                stream_interval: int = 2,
+                judge_sent_end: bool = False,
         ):
             model.set_adapter(model_path)
             for x in generate_stream(
-                model,
-                tokenizer,
-                params,
-                device,
-                context_len,
-                stream_interval,
-                judge_sent_end,
+                    model,
+                    tokenizer,
+                    params,
+                    device,
+                    context_len,
+                    stream_interval,
+                    judge_sent_end,
             ):
                 yield x
 
@@ -566,6 +574,40 @@ class CodeT5pAdapter(BaseModelAdapter):
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_path,
             low_cpu_mem_usage=True,
+            trust_remote_code=True,
+            **from_pretrained_kwargs,
+        )
+        return model, tokenizer
+
+
+class CodeGenAdapter(BaseModelAdapter):
+    """The model adapter for Salesforce/codegen25-7b-multi"""
+
+    def match(self, model_path: str):
+        return "codegen" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        revision = from_pretrained_kwargs.get("revision", "main")
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            trust_remote_code=True,
+            **from_pretrained_kwargs,
+        )
+        return model, tokenizer
+
+
+class CodeGeeXAdapter(BaseModelAdapter):
+    """The model adapter for THUDM/codegeex2-6b"""
+
+    def match(self, model_path: str):
+        return "codegeex" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        revision = from_pretrained_kwargs.get("revision", "main")
+        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        model = AutoModel.from_pretrained(
+            model_path,
             trust_remote_code=True,
             **from_pretrained_kwargs,
         )
@@ -942,6 +984,7 @@ class WizardLMAdapter(BaseModelAdapter):
             # (https://huggingface.co/WizardLM/WizardLM-13B-V1.0)
             return get_conv_template("one_shot")
 
+
 class WizardCoderAdapter(BaseModelAdapter):
     """The model adapter for WizardLM/WizardCoder-15B-V1.0"""
 
@@ -1217,6 +1260,8 @@ register_model_adapter(VicunaAdapter)
 register_model_adapter(AiroborosAdapter)
 register_model_adapter(LongChatAdapter)
 register_model_adapter(CodeT5pAdapter)
+register_model_adapter(CodeGenAdapter)
+register_model_adapter(CodeGeeXAdapter)
 register_model_adapter(T5Adapter)
 register_model_adapter(KoalaAdapter)
 register_model_adapter(AlpacaAdapter)

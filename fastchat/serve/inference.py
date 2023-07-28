@@ -306,6 +306,8 @@ def chat_loop(
     model_type = str(type(model)).lower()
     is_t5 = "t5" in model_type
     is_codet5p = "codet5p" in model_type
+    is_codegen = "codegen" in model_type
+    is_codegeex = "codegeex" in model_type
 
     # Hardcode T5's default repetition penalty to be 1.2
     if is_t5 and repetition_penalty == 1.0:
@@ -347,6 +349,12 @@ def chat_loop(
         prompt = conv.get_prompt()
 
         if is_codet5p:  # codet5p is a code completion model.
+            prompt = inp
+
+        if is_codegen:  # codet5p is a code completion model.
+            prompt = inp
+
+        if is_codegeex:  # codet5p is a code completion model.
             prompt = inp
 
         gen_params = {

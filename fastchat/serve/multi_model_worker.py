@@ -53,6 +53,8 @@ from fastchat.model.model_adapter import (
 from fastchat.model.model_chatglm import generate_stream_chatglm
 from fastchat.model.model_falcon import generate_stream_falcon
 from fastchat.model.model_codet5p import generate_stream_codet5p
+from fastchat.model.model_codegen import generate_stream_codegen
+from fastchat.model.model_codegeex import generate_stream_codegeex
 from fastchat.model.model_wizardcoder import generate_stream_wizardcoder
 from fastchat.modules.gptq import GptqConfig
 from fastchat.serve.inference import generate_stream

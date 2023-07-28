@@ -166,6 +166,18 @@ register_model_info(
     "Code completion model released by Salesforce",
 )
 register_model_info(
+    ["codegen25-7b-multi"],
+    "codegen25-7b-multi",
+    "https://huggingface.co/Salesforce/codegen25-7b-multi",
+    "Code completion model released by Salesforce",
+)
+register_model_info(
+    ["codegeex2-6b"],
+    "codegeex2-6b",
+    "https://huggingface.co/THUDM/codegeex2-6b",
+    "Code generation model released by THUDM",
+)
+register_model_info(
     ["fastchat-t5-3b", "fastchat-t5-3b-v1.0"],
     "FastChat-T5",
     "https://huggingface.co/lmsys/fastchat-t5-3b-v1.0",
