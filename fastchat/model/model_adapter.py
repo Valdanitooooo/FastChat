@@ -588,7 +588,7 @@ class CodeGenAdapter(BaseModelAdapter):
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         revision = from_pretrained_kwargs.get("revision", "main")
-        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, revision=revision)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             trust_remote_code=True,
@@ -605,7 +605,7 @@ class CodeGeeXAdapter(BaseModelAdapter):
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         revision = from_pretrained_kwargs.get("revision", "main")
-        tokenizer = AutoTokenizer.from_pretrained(model_path, revision=revision)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, revision=revision)
         model = AutoModel.from_pretrained(
             model_path,
             trust_remote_code=True,
