@@ -892,6 +892,7 @@ register_conv_template(
         messages=(),
         offset=0,
         sep_style=SeparatorStyle.EMPTY,
+        sep="",
     )
 )
 
