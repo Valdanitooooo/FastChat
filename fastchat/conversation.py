@@ -27,6 +27,7 @@ class SeparatorStyle(IntEnum):
     RWKV = auto()
     PHOENIX = auto()
     ROBIN = auto()
+    EMPTY = auto()
 
 
 @dataclasses.dataclass
@@ -193,6 +194,9 @@ class Conversation:
                     ret += role + ":\n" + message + self.sep
                 else:
                     ret += role + ":\n"
+            return ret
+        elif self.sep_style == SeparatorStyle.EMPTY:
+            ret = self.messages[-1][1]
             return ret
         else:
             raise ValueError(f"Invalid style: {self.sep_style}")
@@ -876,6 +880,18 @@ register_conv_template(
         sep="\n",
         sep2="\n",
         stop_str="<end>",
+    )
+)
+
+# Robin default template
+register_conv_template(
+    Conversation(
+        name="empty",
+        system="",
+        roles=(),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.EMPTY,
     )
 )
 

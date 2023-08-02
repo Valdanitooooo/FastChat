@@ -597,7 +597,7 @@ class CodeGenAdapter(BaseModelAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        return get_conv_template("claude")
+        return get_conv_template("empty")
 
 
 class CodeGeeXAdapter(BaseModelAdapter):
@@ -618,7 +618,7 @@ class CodeGeeXAdapter(BaseModelAdapter):
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
-        return get_conv_template("claude")
+        return get_conv_template("empty")
 
 
 class T5Adapter(BaseModelAdapter):
