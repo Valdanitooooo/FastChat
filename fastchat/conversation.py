@@ -196,7 +196,7 @@ class Conversation:
                     ret += role + ":\n"
             return ret
         elif self.sep_style == SeparatorStyle.EMPTY:
-            ret = self.messages[-1][1]
+            ret = self.messages[-2][1]
             return ret
         else:
             raise ValueError(f"Invalid style: {self.sep_style}")
