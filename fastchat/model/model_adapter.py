@@ -596,6 +596,9 @@ class CodeGenAdapter(BaseModelAdapter):
         )
         return model, tokenizer
 
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("claude")
+
 
 class CodeGeeXAdapter(BaseModelAdapter):
     """The model adapter for THUDM/codegeex2-6b"""
@@ -611,7 +614,11 @@ class CodeGeeXAdapter(BaseModelAdapter):
             trust_remote_code=True,
             **from_pretrained_kwargs,
         )
+        model = model.eval()
         return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("claude")
 
 
 class T5Adapter(BaseModelAdapter):
