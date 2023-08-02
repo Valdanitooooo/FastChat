@@ -888,7 +888,7 @@ register_conv_template(
     Conversation(
         name="empty",
         system="",
-        roles=(),
+        roles=("user", "assistant"),
         messages=(),
         offset=0,
         sep_style=SeparatorStyle.EMPTY,
