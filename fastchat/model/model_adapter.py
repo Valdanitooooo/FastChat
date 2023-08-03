@@ -1269,6 +1269,15 @@ class LLaMA27B32KAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("empty")
 
+class NewHopeAdapter(BaseModelAdapter):
+    """The model adapter for SLAM-group/NewHope"""
+
+    def match(self, model_path: str):
+        return "newhope" in model_path.lower()
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("mpt-30b-instruct")
+
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
@@ -1319,6 +1328,7 @@ register_model_adapter(StarChatAdapter)
 register_model_adapter(Llama2Adapter)
 register_model_adapter(CuteGPTAdapter)
 register_model_adapter(LLaMA27B32KAdapter)
+register_model_adapter(NewHopeAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
