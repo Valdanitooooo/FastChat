@@ -1261,10 +1261,10 @@ class CuteGPTAdapter(BaseModelAdapter):
 
 
 class LLaMA27B32KAdapter(BaseModelAdapter):
-    """The model adapter for togethercomputer/LLaMA-2-7B-32K"""
+    """The model adapter for togethercomputer/LLaMA2-7B-32K"""
 
     def match(self, model_path: str):
-        return "llama-2-7b-32k" in model_path.lower()
+        return "llama2-7b-32k" in model_path.lower()
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("empty")
