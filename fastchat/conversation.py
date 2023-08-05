@@ -882,7 +882,28 @@ register_conv_template(
     )
 )
 
-# Robin default template
+# Qwen-chat default template
+# source: https://huggingface.co/Qwen/Qwen-7B-Chat/blob/main/qwen_generation_utils.py#L130
+register_conv_template(
+    Conversation(
+        name="qwen-7b-chat",
+        system_template="<|im_start|>system\n{system_message}",
+        system_message="You are a helpful assistant.",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|im_end|>",
+        stop_token_ids=[
+            151643,
+            151644,
+            151645,
+        ],
+        stop_str="<|endoftext|>",
+    )
+)
+
+# Empty default template
 register_conv_template(
     Conversation(
         name="empty",
