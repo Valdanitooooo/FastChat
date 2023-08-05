@@ -907,7 +907,7 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="empty",
-        system="",
+        system_message="",
         roles=("user", "assistant"),
         messages=(),
         offset=0,
