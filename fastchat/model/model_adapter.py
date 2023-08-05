@@ -1331,7 +1331,11 @@ class QWenAdapter(BaseModelAdapter):
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", trust_remote_code=True).eval()
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, device_map="auto",
+            max_seq_len=8192,
+            trust_remote_code=True
+        ).eval()
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
