@@ -1323,6 +1323,20 @@ class NewHopeAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("mpt-30b-instruct")
 
+class QWenAdapter(BaseModelAdapter):
+    """The model adapter for Qwen/Qwen-7B-Chat"""
+
+    def match(self, model_path: str):
+        return "qwen-7b-chat" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", trust_remote_code=True).eval()
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("qwen-7b-chat")
+
 
 # Note: the registration order matters.
 # The one registered earlier has a higher matching priority.
@@ -1374,6 +1388,7 @@ register_model_adapter(Llama2Adapter)
 register_model_adapter(CuteGPTAdapter)
 register_model_adapter(LLaMA27B32KAdapter)
 register_model_adapter(NewHopeAdapter)
+register_model_adapter(QWenAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
