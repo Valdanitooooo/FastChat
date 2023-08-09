@@ -65,12 +65,11 @@ class BaseModelAdapter:
                 model_path,
                 use_fast=self.use_fast_tokenizer,
                 revision=revision,
+                trust_remote_code=True,
             )
         except TypeError:
             tokenizer = AutoTokenizer.from_pretrained(
-                model_path,
-                use_fast=False,
-                revision=revision,
+                model_path, use_fast=False, revision=revision, trust_remote_code=True
             )
         try:
             model = AutoModelForCausalLM.from_pretrained(
@@ -1304,7 +1303,6 @@ class CuteGPTAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("cutegpt")
 
-
 class LLaMA27B32KAdapter(BaseModelAdapter):
     """The model adapter for togethercomputer/LLaMA2-7B-32K"""
 
@@ -1323,19 +1321,70 @@ class NewHopeAdapter(BaseModelAdapter):
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("mpt-30b-instruct")
 
-class QWenAdapter(BaseModelAdapter):
-    """The model adapter for Qwen/Qwen-7B-Chat"""
+class OpenOrcaAdapter(BaseModelAdapter):
+    "Model adapater for Open-Orca models (e.g., Open-Orca/OpenOrcaxOpenChat-Preview2-13B)" ""
+
+    use_fast_tokenizer = False
 
     def match(self, model_path: str):
-        return "qwen-7b-chat" in model_path.lower()
+        return "openorca" in model_path.lower()
 
     def load_model(self, model_path: str, from_pretrained_kwargs: dict):
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        revision = from_pretrained_kwargs.get("revision", "main")
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, use_fast=self.use_fast_tokenizer, revision=revision
+        )
         model = AutoModelForCausalLM.from_pretrained(
-            model_path, device_map="auto",
-            max_seq_len=8192,
-            trust_remote_code=True
+            model_path,
+            low_cpu_mem_usage=True,
+            **from_pretrained_kwargs,
         ).eval()
+        return model, tokenizer
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("open-orca")
+
+
+class QwenChatAdapter(BaseModelAdapter):
+    """The model adapter for Qwen/Qwen-7B-Chat
+    To run this model, you need to ensure additional flash attention installation:
+    ``` bash
+    git clone https://github.com/Dao-AILab/flash-attention
+    cd flash-attention && pip install .
+    pip install csrc/layer_norm
+    pip install csrc/rotary
+    ```
+
+    Since from 2.0, the following change happened
+    - `flash_attn_unpadded_func` -> `flash_attn_varlen_func`
+    - `flash_attn_unpadded_qkvpacked_func` -> `flash_attn_varlen_qkvpacked_func`
+    - `flash_attn_unpadded_kvpacked_func` -> `flash_attn_varlen_kvpacked_func`
+    You may need to revise the code in: https://huggingface.co/Qwen/Qwen-7B-Chat/blob/main/modeling_qwen.py#L69
+    to from flash_attn.flash_attn_interface import flash_attn_varlen_func as flash_attn_unpadded_func
+    """
+
+    def match(self, model_path: str):
+        return "qwen" in model_path.lower()
+
+    def load_model(self, model_path: str, from_pretrained_kwargs: dict):
+        from transformers.generation import GenerationConfig
+
+        revision = from_pretrained_kwargs.get("revision", "main")
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            low_cpu_mem_usage=True,
+            trust_remote_code=True,
+            fp16=True,
+            **from_pretrained_kwargs,
+        ).eval()
+        model.generation_config = GenerationConfig.from_pretrained(
+            model_path, trust_remote_code=True
+        )
+        if hasattr(model.config, "use_dynamic_ntk") and model.config.use_dynamic_ntk:
+            model.config.max_sequence_length = 16384
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_path, trust_remote_code=True, revision=revision
+        )
         return model, tokenizer
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
@@ -1392,7 +1441,8 @@ register_model_adapter(Llama2Adapter)
 register_model_adapter(CuteGPTAdapter)
 register_model_adapter(LLaMA27B32KAdapter)
 register_model_adapter(NewHopeAdapter)
-register_model_adapter(QWenAdapter)
+register_model_adapter(OpenOrcaAdapter)
+register_model_adapter(QwenChatAdapter)
 
 # After all adapters, try the default base adapter.
 register_model_adapter(BaseModelAdapter)
