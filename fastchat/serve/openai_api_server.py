@@ -241,21 +241,23 @@ async def get_gen_params(
         stop_str=conv["stop_str"],
         stop_token_ids=conv["stop_token_ids"],
     )
-
+    print(f"messages: {messages}")
     if isinstance(messages, str):
         prompt = messages
     else:
-        for message in messages:
-            msg_role = message["role"]
-            if msg_role == "system":
-                conv.set_system_message(message["content"])
-            elif msg_role == "user":
-                conv.append_message(conv.roles[0], message["content"])
-            elif msg_role == "assistant":
-                conv.append_message(conv.roles[1], message["content"])
-            else:
-                raise ValueError(f"Unknown role: {msg_role}")
-
+        if model_name != "wizardcoder-15b-v1.0":
+            for message in messages:
+                msg_role = message["role"]
+                if msg_role == "system":
+                    conv.set_system_message(message["content"])
+                elif msg_role == "user":
+                    conv.append_message(conv.roles[0], message["content"])
+                elif msg_role == "assistant":
+                    conv.append_message(conv.roles[1], message["content"])
+                else:
+                    raise ValueError(f"Unknown role: {msg_role}")
+        else:
+            conv.append_message(conv.roles[0], messages[-1]["content"])
         # Add a blank message for the assistant.
         conv.append_message(conv.roles[1], None)
         prompt = conv.get_prompt()
