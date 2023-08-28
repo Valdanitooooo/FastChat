@@ -7,7 +7,7 @@ You can contribute back the changes you want to make.
 
 import dataclasses
 from enum import auto, IntEnum
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Union
 
 
 class SeparatorStyle(IntEnum):
@@ -51,7 +51,7 @@ class Conversation:
     sep: str = "\n"
     sep2: str = None
     # Stop criteria (the default one is EOS token)
-    stop_str: str = None
+    stop_str: Union[str, List[str]] = None
     # Stops generation if meeting any token in this list
     stop_token_ids: List[int] = None
 
@@ -123,11 +123,11 @@ class Conversation:
             return ret
         elif self.sep_style == SeparatorStyle.LLAMA2:
             seps = [self.sep, self.sep2]
-            ret = ""
+            ret = system_prompt
             for i, (role, message) in enumerate(self.messages):
                 if message:
                     if i == 0:
-                        ret += system_prompt + message
+                        ret += message + " "
                     else:
                         ret += role + " " + message + seps[i % 2]
                 else:
@@ -232,8 +232,7 @@ class Conversation:
 
     def to_openai_api_messages(self):
         """Convert the conversation to OpenAI chat completion format."""
-        system_prompt = self.system_template.format(system_message=self.system_message)
-        ret = [{"role": "system", "content": system_prompt}]
+        ret = [{"role": "system", "content": self.system_message}]
 
         for i, (_, msg) in enumerate(self.messages[self.offset :]):
             if i % 2 == 0:
@@ -559,6 +558,19 @@ register_conv_template(
     )
 )
 
+# ReaLM default template
+register_conv_template(
+    Conversation(
+        name="ReaLM-7b-v1",
+        system_message="A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.\n\n",
+        roles=("Human", "Assistant"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.PHOENIX,
+        sep="</s>",
+    )
+)
+
 # ChatGPT default template
 register_conv_template(
     Conversation(
@@ -818,10 +830,11 @@ register_conv_template(
 )
 
 # StarChat template
+# reference: https://huggingface.co/spaces/HuggingFaceH4/starchat-playground/blob/main/dialogues.py
 register_conv_template(
     Conversation(
         name="starchat",
-        system_template="<system>{system_message}\n",
+        system_template="<system>\n{system_message}",
         roles=("<|user|>", "<|assistant|>"),
         messages=(),
         offset=0,
@@ -834,17 +847,17 @@ register_conv_template(
 
 # Baichuan-13B-Chat template
 register_conv_template(
-    # source: https://huggingface.co/baichuan-inc/Baichuan-13B-Chat/blob/f5f47be2adbbdceb784f334d6fa1ca2c73e65097/modeling_baichuan.py#L507
+    # source: https://huggingface.co/baichuan-inc/Baichuan-13B-Chat/blob/19ef51ba5bad8935b03acd20ff04a269210983bc/modeling_baichuan.py#L555
     # https://huggingface.co/baichuan-inc/Baichuan-13B-Chat/blob/main/generation_config.json
+    # https://github.com/baichuan-inc/Baichuan-13B/issues/25
     Conversation(
         name="baichuan-chat",
-        roles=(" <reserved_102> ", " <reserved_103> "),
+        roles=("<reserved_102>", "<reserved_103>"),
         messages=(),
         offset=0,
-        sep_style=SeparatorStyle.NO_COLON_TWO,
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="",
-        sep2="</s>",
-        stop_token_ids=[2, 195],
+        stop_token_ids=[],
     )
 )
 
@@ -931,6 +944,57 @@ register_conv_template(
         offset=0,
         sep_style=SeparatorStyle.EMPTY,
         sep="",
+    )
+)
+
+# AquilaChat default template
+# source: https://github.com/FlagAI-Open/FlagAI/blob/master/examples/Aquila/Aquila-chat/cyg_conversation.py
+register_conv_template(
+    Conversation(
+        name="aquila-chat",
+        system_message="A chat between a curious human and an artificial intelligence assistant. "
+        "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+        roles=("Human", "Assistant", "System"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_SINGLE,
+        sep="###",
+        sep2="",
+        stop_str=["###", "</s>", "[UNK]"],
+    )
+)
+
+# Llama2-Chinese default template
+# source: https://huggingface.co/FlagAlpha
+register_conv_template(
+    Conversation(
+        name="llama2-chinese",
+        system_template="<s>{system_message}</s>",
+        roles=("Human", "Assistant", "System"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep="\n",
+        sep2="\n</s><s>",
+        stop_str="</s>",
+    )
+)
+
+# Vigogne Chat default template
+# source: https://github.com/bofenghuang/vigogne
+register_conv_template(
+    Conversation(
+        name="vigogne-chat",
+        system_template="<|system|>: {system_message}",
+        system_message="Vous êtes l'assistant IA nommé Vigogne, créé par Zaion Lab (https://zaion.ai). "
+        "Vous suivez extrêmement bien les instructions. Aidez autant que vous le pouvez.",
+        roles=("<|user|>", "<|assistant|>"),
+        messages=(),
+        offset=0,
+        sep_style=SeparatorStyle.ADD_COLON_TWO,
+        sep="\n",
+        sep2="</s>\n",
+        stop_str="<|user|>",
     )
 )
 
